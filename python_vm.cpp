@@ -21,7 +21,6 @@ struct PythonVM {
 	HandleType handle;
 };
 
-static char DllNameBuffer[128];
 static const int PYTHON_VM_MAX = 5;
 static int python_vm_num = 0;
 
