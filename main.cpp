@@ -13,8 +13,13 @@ void thread_fun(struct PythonVM* pythonvm) {
 
 int main(int argc, char **argv) {
 
-	struct PythonVM* py1 = pythonvm_create();
-	struct PythonVM* py2 = pythonvm_create();
+#ifdef _WIN32
+	struct PythonVM* py1 = pythonvm_create("python36-1.dll");
+	struct PythonVM* py2 = pythonvm_create("python36-2.dll");
+#elif linux
+	struct PythonVM* py1 = pythonvm_create("/usr/lib/x86_64-linux-gnu/libpython2.7.so.1.0-1");
+	struct PythonVM* py2 = pythonvm_create("/usr/lib/x86_64-linux-gnu/libpython2.7.so.1.0-2");
+#endif
 
 	thread* threads[2];
 	threads[0] = new thread(thread_fun, py1);

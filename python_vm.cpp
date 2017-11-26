@@ -33,7 +33,7 @@ static PyObject* call_cpython_api_ret_pyobj_param2_pvoid_pvoid(struct PythonVM* 
 
 
 struct PythonVM*
-pythonvm_create() {
+pythonvm_create(const char* sLibName) {
 	if (python_vm_num > PYTHON_VM_MAX) {
 		assert(0);
 	}
@@ -46,28 +46,14 @@ pythonvm_create() {
 	python_vm_num += 1;
 
 #ifdef _WIN32
-	int cx = _snprintf_s(DllNameBuffer, sizeof(DllNameBuffer), "python36-%d.dll", python_vm_num);
-	if (cx <= 0 || cx >= sizeof(DllNameBuffer)) {
-		assert(0);
-	}
-	char* pPythonDllFileName = DllNameBuffer;
-	HINSTANCE handle = LoadLibrary(pPythonDllFileName);
-	if (handle == NULL) {
-		assert(0);
-	}
-
+	HINSTANCE handle = LoadLibrary(sLibName);
 #elif linux
-	int cx = snprintf(DllNameBuffer, sizeof(DllNameBuffer), "/usr/lib/x86_64-linux-gnu/libpython2.7.so.1.0-%d", python_vm_num);
-	if (cx <= 0 || cx >= sizeof(DllNameBuffer)) {
-		assert(0);
-	}
-	char* pPythonDllFileName = DllNameBuffer;
-	void *handle = dlopen(pPythonDllFileName, RTLD_NOW);
+	void *handle = dlopen(sLibName, RTLD_NOW);
+#endif
 	if (handle == NULL) {
 		assert(0);
 	}
 
-#endif
 	p->handle = handle;
 	call_cpython_api_ret_void_param0(p, "Py_Initialize");
 	call_cpython_api_ret_void_param0(p, "PyEval_InitThreads");

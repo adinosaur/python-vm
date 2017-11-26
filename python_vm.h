@@ -3,7 +3,7 @@
 struct PythonVM;
 struct PyObject;
 
-struct PythonVM* pythonvm_create();
+struct PythonVM* pythonvm_create(const char* sLibName);
 void pythonvm_destory(struct PythonVM* p);
 
 void pythonvm__PyRun_SimpleString(struct PythonVM* p, const char *command);
