@@ -10,3 +10,7 @@ python-vm
 
 windows直接打开vs编译，linux下编译命令如下：
 `g++ -g -D linux -std=c++11 python_vm.cpp main.cpp -pthread -ldl`
+
+
+## Blog
+http://www.cnblogs.com/adinosaur/p/7932048.html
