@@ -6,6 +6,12 @@ struct PyObject;
 struct PythonVM* pythonvm_create(const char* sLibName);
 void pythonvm_destory(struct PythonVM* p);
 
+void pythonvm__Py_Initialize(struct PythonVM* p);
+#define Py_Initialize pythonvm__Py_Initialize
+
+void pythonvm__Py_FinalizeEx(struct PythonVM* p);
+#define Py_FinalizeEx pythonvm__Py_FinalizeEx
+
 void pythonvm__PyRun_SimpleString(struct PythonVM* p, const char *command);
 #define PyRun_SimpleString pythonvm__PyRun_SimpleString
 

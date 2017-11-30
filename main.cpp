@@ -4,18 +4,23 @@
 
 using namespace std;
 
-void thread_fun(struct PythonVM* pythonvm) {
-	const char* code = "i = 1\n"
-						"while 1:\n"
-						"    i += 1\n";
-	PyRun_SimpleString(pythonvm, code);
+const char* PYTHONCODE = 
+"i = 1\n" \
+"while 1:\n" \
+"    i += 1";
+
+void thread_fun(struct PythonVM* p) {
+	//在同一个线程初始化python解释器和调用cpython的api
+	Py_Initialize(p);
+	PyRun_SimpleString(p, PYTHONCODE);
+	Py_FinalizeEx(p);
 }
 
 int main(int argc, char **argv) {
 
 #ifdef _WIN32
-	struct PythonVM* py1 = pythonvm_create("python36-1.dll");
-	struct PythonVM* py2 = pythonvm_create("python36-2.dll");
+	struct PythonVM* py1 = pythonvm_create("python36_d-1.dll");
+	struct PythonVM* py2 = pythonvm_create("python36_d-2.dll");
 #elif linux
 	struct PythonVM* py1 = pythonvm_create("/usr/lib/x86_64-linux-gnu/libpython2.7.so.1.0-1");
 	struct PythonVM* py2 = pythonvm_create("/usr/lib/x86_64-linux-gnu/libpython2.7.so.1.0-2");

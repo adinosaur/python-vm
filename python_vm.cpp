@@ -21,32 +21,27 @@ struct PythonVM {
 	HandleType handle;
 };
 
-static const int PYTHON_VM_MAX = 5;
-static int python_vm_num = 0;
-
 static void call_cpython_api_ret_void_param0(struct PythonVM* p, const char *pyFunctionName);
-static void call_cpython_api_ret_void_param1_pvoid(struct PythonVM* p, const char *pyFunctionName, void* param1);
-static void call_cpython_api_ret_void_param2_pvoid_pvoid(struct PythonVM* p, const char *pyFunctionName, void* param1, void* param2);
-static PyObject* call_cpython_api_ret_pyobj_param1_pvoid(struct PythonVM* p, const char *pyFunctionName, void* param1);
-static PyObject* call_cpython_api_ret_pyobj_param2_pvoid_pvoid(struct PythonVM* p, const char *pyFunctionName, void* param1, void* param2);
+static void call_cpython_api_ret_void_param1_ptr(struct PythonVM* p, const char *pyFunctionName, void* param1);
+static void call_cpython_api_ret_void_param2_ptr_ptr(struct PythonVM* p, const char *pyFunctionName, void* param1, void* param2);
+static PyObject* call_cpython_api_ret_ptr_param0(struct PythonVM* p, const char *pyFunctionName);
+static PyObject* call_cpython_api_ret_ptr_param1_ptr(struct PythonVM* p, const char *pyFunctionName, void* param1);
+static PyObject* call_cpython_api_ret_ptr_param2_ptr_ptr(struct PythonVM* p, const char *pyFunctionName, void* param1, void* param2);
 
 
 struct PythonVM*
 pythonvm_create(const char* sLibName) {
-	if (python_vm_num > PYTHON_VM_MAX) {
-		assert(0);
-	}
-
 	PythonVM* p = new struct PythonVM;
 	if (p == NULL) {
 		assert(0);
 	}
 	p->handle = NULL;
-	python_vm_num += 1;
 
 #ifdef _WIN32
 	HINSTANCE handle = LoadLibrary(sLibName);
 #elif linux
+	//dlmopen segmentation fault
+	//void *handle = dlmopen(LM_ID_NEWLM, sLibName, RTLD_NOW);
 	void *handle = dlopen(sLibName, RTLD_NOW);
 #endif
 	if (handle == NULL) {
@@ -54,15 +49,11 @@ pythonvm_create(const char* sLibName) {
 	}
 
 	p->handle = handle;
-	call_cpython_api_ret_void_param0(p, "Py_Initialize");
-	call_cpython_api_ret_void_param0(p, "PyEval_InitThreads");
 	return p;
 }
 
 void
 pythonvm_destory(struct PythonVM* p) {
-	call_cpython_api_ret_void_param0(p, "Py_FinalizeEx");
-
 #ifdef _WIN32
 	//If the function succeeds, the return value is nonzero.
 	//If the function fails, the return value is zero.To get extended error information, call the GetLastError function.
@@ -89,7 +80,7 @@ call_cpython_api_ret_void_param0(struct PythonVM* p, const char *pyFunctionName)
 }
 
 static void
-call_cpython_api_ret_void_param1_pvoid(struct PythonVM* p, const char *pyFunctionName, void* param1) {
+call_cpython_api_ret_void_param1_ptr(struct PythonVM* p, const char *pyFunctionName, void* param1) {
 	typedef void* (*PyFunctionType)(void*);
 	PyFunctionType function = (PyFunctionType)GetProcAddress(p->handle, pyFunctionName);
 	if (function == NULL) {
@@ -99,7 +90,7 @@ call_cpython_api_ret_void_param1_pvoid(struct PythonVM* p, const char *pyFunctio
 }
 
 static void
-call_cpython_api_ret_void_param2_pvoid_pvoid(struct PythonVM* p, const char *pyFunctionName, void* param1, void* param2) {
+call_cpython_api_ret_void_param2_ptr_ptr(struct PythonVM* p, const char *pyFunctionName, void* param1, void* param2) {
 	typedef void* (*PyFunctionType)(void*, void*);
 	PyFunctionType function = (PyFunctionType)GetProcAddress(p->handle, pyFunctionName);
 	if (function == NULL) {
@@ -108,8 +99,18 @@ call_cpython_api_ret_void_param2_pvoid_pvoid(struct PythonVM* p, const char *pyF
 	function(param1, param2);
 }
 
-PyObject*
-call_cpython_api_ret_pyobj_param1_pvoid(struct PythonVM* p, const char *pyFunctionName, void* param1) {
+static PyObject*
+call_cpython_api_ret_ptr_param0(struct PythonVM* p, const char *pyFunctionName) {
+	typedef PyObject* (*PyFunctionType)();
+	PyFunctionType function = (PyFunctionType)GetProcAddress(p->handle, pyFunctionName);
+	if (function == NULL) {
+		assert(0);
+	}
+	return function();
+}
+
+static PyObject*
+call_cpython_api_ret_ptr_param1_ptr(struct PythonVM* p, const char *pyFunctionName, void* param1) {
 	typedef PyObject* (*PyFunctionType)(void*);
 	PyFunctionType function = (PyFunctionType)GetProcAddress(p->handle, pyFunctionName);
 	if (function == NULL) {
@@ -118,8 +119,8 @@ call_cpython_api_ret_pyobj_param1_pvoid(struct PythonVM* p, const char *pyFuncti
 	return function(param1);
 }
 
-PyObject*
-call_cpython_api_ret_pyobj_param2_pvoid_pvoid(struct PythonVM* p, const char *pyFunctionName, void* param1, void* param2) {
+static PyObject*
+call_cpython_api_ret_ptr_param2_ptr_ptr(struct PythonVM* p, const char *pyFunctionName, void* param1, void* param2) {
 	typedef PyObject* (*PyFunctionType)(void*, void*);
 	PyFunctionType function = (PyFunctionType)GetProcAddress(p->handle, pyFunctionName);
 	if (function == NULL) {
@@ -128,30 +129,41 @@ call_cpython_api_ret_pyobj_param2_pvoid_pvoid(struct PythonVM* p, const char *py
 	return function(param1, param2);
 }
 
+void
+pythonvm__Py_Initialize(struct PythonVM* p) {
+	call_cpython_api_ret_void_param0(p, "Py_Initialize");
+	call_cpython_api_ret_void_param0(p, "PyEval_InitThreads");
+}
+
+void
+pythonvm__Py_FinalizeEx(struct PythonVM* p) {
+	call_cpython_api_ret_void_param0(p, "Py_FinalizeEx");
+}
+
 void 
 pythonvm__PyRun_SimpleString(struct PythonVM* p, const char *command) {
 	//int PyRun_SimpleFile(FILE *fp, const char *filename)
 	//PyRun_SimpleString: https://docs.python.org/3.6/c-api/veryhigh.html#c.PyRun_SimpleFile
-	call_cpython_api_ret_void_param1_pvoid(p, "PyRun_SimpleString", (void*)command);
+	call_cpython_api_ret_void_param1_ptr(p, "PyRun_SimpleString", (void*)command);
 }
 
 PyObject*
 pythonvm__PyImport_ImportModule(struct PythonVM* p, const char* sModuleName) {
 	//PyObject* PyImport_ImportModule(const char *name)
 	//PyImport_ImportModule: https://docs.python.org/3.6/c-api/import.html?highlight=pyimport_importmodule#c.PyImport_ImportModule
-	return call_cpython_api_ret_pyobj_param1_pvoid(p, "PyImport_ImportModule", (void*)sModuleName);
+	return call_cpython_api_ret_ptr_param1_ptr(p, "PyImport_ImportModule", (void*)sModuleName);
 }
 
 PyObject*
 pythonvm__PyObject_GetAttrString(struct PythonVM* p, const char* sFunctionName) {
 	//PyObject* PyObject_GetAttrString(PyObject *o, const char *attr_name)
 	//PyObject_GetAttrString: https://docs.python.org/3.6/c-api/object.html?highlight=pyobject_getattrstring#c.PyObject_GetAttrString
-	return call_cpython_api_ret_pyobj_param1_pvoid(p, "PyObject_GetAttrString", (void*)sFunctionName);
+	return call_cpython_api_ret_ptr_param1_ptr(p, "PyObject_GetAttrString", (void*)sFunctionName);
 }
 
 PyObject* 
 pythonvm__PyObject_CallObject(struct PythonVM* p, PyObject *callable_object, PyObject *args) {
 	//PyObject* PyObject_CallObject(PyObject *callable_object, PyObject *args)
 	//PyObject_CallObject: https://docs.python.org/3.6/c-api/object.html?highlight=pyobject_callobject#c.PyObject_CallObject
-	return call_cpython_api_ret_pyobj_param2_pvoid_pvoid(p, "PyObject_CallObject", (void*)callable_object, (void*)args);
+	return call_cpython_api_ret_ptr_param2_ptr_ptr(p, "PyObject_CallObject", (void*)callable_object, (void*)args);
 }
